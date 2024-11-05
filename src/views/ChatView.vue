@@ -2,10 +2,11 @@
   <div class="chat-container">
     <div class="chat-messages" ref="messageContainer">
       <ChatMessage
-        v-for="message in messages"
-        :key="message.id"
-        :content="message.content"
-        :role="message.role"
+        v-for="msg in messages"
+        :key="msg.id"
+        :content="msg.content"
+        :html-content="msg.htmlContent"
+        :role="msg.role"
       />
     </div>
 
@@ -27,18 +28,25 @@ import ChatInput from '../components/ChatInput.vue'
 import { sendChatMessage } from '../api/chat.ts'
 import type { Message } from '../types/chat'
 
-const messages = ref<Message[]>([])
+interface ChatMessage {
+  id: string
+  content: string
+  htmlContent?: string
+  role: 'user' | 'assistant'
+}
+
+const messages = ref<ChatMessage[]>([])
 const userInput = ref<string>('')
 const loading = ref<boolean>(false)
 const messageContainer = ref<HTMLElement | null>(null)
 
-const sendMessage = async (): Promise<void> => {
+const sendMessage = async (content: string) => {
   if (!userInput.value.trim() || loading.value) return
 
-  const userMessage: Message = {
+  const userMessage: ChatMessage = {
     id: uuidv4(),
-    role: 'user',
-    content: userInput.value
+    content: userInput.value,
+    role: 'user'
   }
   
   messages.value.push(userMessage)
@@ -47,10 +55,11 @@ const sendMessage = async (): Promise<void> => {
   try {
     const response = await sendChatMessage(userInput.value)
     
-    const assistantMessage: Message = {
+    const assistantMessage: ChatMessage = {
       id: uuidv4(),
-      role: 'assistant',
-      content: response.message
+      content: response.message,
+      htmlContent: response.htmlContent,
+      role: 'assistant'
     }
     
     messages.value.push(assistantMessage)
