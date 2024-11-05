@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps<{
   modelValue: string
@@ -44,11 +44,17 @@ const handleEnter = (e: KeyboardEvent) => {
     }
   } else {
     emit('send')
+    setTimeout(() => {
+      textareaRef.value?.focus()
+    }, 0)
   }
 }
 
 watch(() => props.modelValue, (newValue) => {
   inputValue.value = newValue
+  setTimeout(() => {
+    textareaRef.value?.focus()
+  }, 0)
 })
 
 watch(inputValue, (newValue) => {
