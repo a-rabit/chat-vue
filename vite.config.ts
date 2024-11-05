@@ -14,5 +14,15 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
+  },
+  server: {
+    proxy: {
+      '/api/v3': {
+        target: 'https://ark.cn-beijing.volces.com',
+        changeOrigin: true,
+        timeout: 60000,  
+        // rewrite: (path) => path.replace(/^\/api/, '')  // 如果需要重写路径，取消注释这行
+      }
+    }
   }
 })
