@@ -11,13 +11,19 @@ const props = defineProps<Props>()
 
 <template>
   <div class="message" :class="role">
-    <!-- 如果有 HTML 内容且是 assistant 角色才使用 HTML 渲染 -->
-    <div v-if="role === 'assistant' && htmlContent" 
+    <div class = "avatar">
+    {{ role === 'user' ? '👨' : '🤖'}}
+    </div>
+    <div class = "content">
+        <div v-if="role === 'assistant' && htmlContent" 
          v-html="htmlContent" 
          class="markdown-content">
+        </div>
+        <!-- 否则显示普通文本 -->
+        <div v-else>{{ content }}</div>
     </div>
-    <!-- 否则显示普通文本 -->
-    <div v-else>{{ content }}</div>
+    <!-- 如果有 HTML 内容且是 assistant 角色才使用 HTML 渲染 -->
+   
   </div>
 </template>
 
@@ -28,12 +34,43 @@ const props = defineProps<Props>()
 }
 
 .user {
-  background-color: #000000;
+  justify-content: flex-end;
 }
 
-.assistant {
-  background-color: #000000;
+.user .content {
+  background: #2b5278;
 }
+
+.assistant .content {
+  background: #2a2a2a;
+}
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #333333;
+  color: #e0e0e0;
+}
+
+.content {
+  display: inline-block;
+  padding: 16px;
+  border-radius: 8px;
+  background: #2a2a2a;
+  max-width: 80%;
+  width: fit-content;
+  line-height: 1.6;
+  color: #e0e0e0;
+  box-shadow: 0 2px 4px rgba(107, 106, 106, 0);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+
 
 .markdown-content {
   /* Markdown 样式保持不变 */
