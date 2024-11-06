@@ -36,7 +36,7 @@ interface ChatCompletionResponse {
       }
     }]
   }
-  export const sendChatMessage = async (message: string): Promise<ChatResponse> => {
+  export const sendChatMessage = async (message: string, signal?: AbortSignal): Promise<ChatResponse> => {
     try {
       const response: AxiosResponse<ChatCompletionResponse> = await api.post('/chat/completions', {
         model: import.meta.env.VITE_MODEL_ID,
@@ -50,7 +50,7 @@ interface ChatCompletionResponse {
             content: message
           }
         ]
-      })
+      }, { signal })
   
       // 将返回的内容转换为 HTML
       const rawContent = response.data.choices[0].message.content
@@ -62,6 +62,9 @@ interface ChatCompletionResponse {
         status: 0
       }
     } catch (error) {
+        if (axios.isCancel(error)) {
+            throw new Error('请求已取消')
+          }
       console.error('API 调用失败:', error)
       return {
         message: '抱歉，发生了错误',

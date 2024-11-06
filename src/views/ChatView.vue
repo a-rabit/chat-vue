@@ -10,8 +10,11 @@
       />
     </div>
 
+    <Transition name="fade">
+        <GeneratingIndicator v-if="loading" @cancel="cancelGeneration"/>
+    </Transition>
     <div class="chat-input-container">
-      <ChatInput 
+      <ChatInput
         v-model="userInput"
         @send="sendMessage"
         :loading="loading"
@@ -27,12 +30,21 @@ import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
 import { sendChatMessage } from '../api/chat.ts'
 import type { Message } from '../types/chat'
+import GeneratingIndicator from '../components/GeneratingIndicator.vue'
 
 interface ChatMessage {
   id: string
   content: string
   htmlContent?: string
   role: 'user' | 'assistant'
+}
+const controller = ref<AbortController | null>(null)
+const cancelGeneration = () => {
+    if (controller.value) {
+        controller.value.abort()
+        controller.value = null
+        loading.value = false
+    }
 }
 
 const messages = ref<ChatMessage[]>([])
@@ -49,11 +61,11 @@ const sendMessage = async (content: string) => {
     role: 'user'
   }
   
-  messages.value.push(userMessage)
+  controller.value = new AbortController()
   loading.value = true
   
   try {
-    const response = await sendChatMessage(userInput.value)
+    const response = await sendChatMessage(userInput.value, controller.value.signal)
     
     const assistantMessage: ChatMessage = {
       id: uuidv4(),
@@ -61,13 +73,18 @@ const sendMessage = async (content: string) => {
       htmlContent: response.htmlContent,
       role: 'assistant'
     }
-    
+    messages.value.push(userMessage)
     messages.value.push(assistantMessage)
   } catch (error) {
-    console.error('Error:', error)
+    if (error.name === 'AbortError') {
+      console.log('生成被取消')
+    } else {
+      console.error('Error:', error)
+    }
   } finally {
     loading.value = false
     userInput.value = ''
+    controller.value = null
     await scrollToBottom()
   }
 }
