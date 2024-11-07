@@ -175,7 +175,6 @@ const copyContent = async () => {
   display: flex;  /* 改为 flex 布局 */
   flex-direction: column;  /* 垂直排列 */
   padding: 16px;
-  padding-bottom: 32px;  /* 增加底部内边距，为按钮留出空间 */
   border-radius: 8px;
   background: #2a2a2a;
   max-width: 80%;
@@ -184,7 +183,7 @@ const copyContent = async () => {
   color: #e0e0e0;
   box-shadow: 0 2px 4px rgba(107, 106, 106, 0);
   word-wrap: break-word;
-  white-space: pre-wrap;
+  /* white-space: pre-wrap; */
 }
 
 
