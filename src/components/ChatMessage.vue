@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch, nextTick, onMounted} from 'vue'
 interface Props {
   content: string
   role: 'user' | 'assistant'
@@ -30,7 +30,41 @@ const copyContent = async () => {
     console.error('复制失败:', err)
   }
 }
+declare global {
+  interface Window {
+    MathJax?: {
+      typesetPromise?: () => Promise<any>
+    }
+  }
+}
 
+const processContent = (content: string) => {
+  // 将括号中的公式转换为 $ 包裹的形式
+  return content.replace(/\((.*?)\)/g, (match, formula) => {
+    // 检查是否包含数学符号
+    if (/[_^{}\\]/.test(formula)) {
+      return `$${formula}$`
+    }
+    return match
+  })
+}
+
+const renderMath = () => {
+  if (window.MathJax) {
+    window.MathJax.typesetPromise?.()
+  }
+}
+
+// 监听内容变化时重新渲染数学公式
+watch(() => props.htmlContent, () => {
+  nextTick(() => {
+    renderMath()
+  })
+})
+
+onMounted(() => {
+  renderMath()
+})
 
 </script>
 
@@ -41,7 +75,7 @@ const copyContent = async () => {
     </div>
     <div class = "content">
         <div v-if="role === 'assistant' && htmlContent" 
-         v-html="htmlContent" 
+         v-html="processContent(htmlContent)" 
          class="markdown-content">
         </div>
         <!-- 否则显示普通文本 -->
@@ -233,6 +267,16 @@ const copyContent = async () => {
 
   :deep(th) {
     background-color: #f6f8fa;
+  }
+
+  :deep(.MathJax) {
+    outline: none;
+  }
+  
+  :deep(.MathJax_Display) {
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 1em 0;
   }
 }
 </style> 
