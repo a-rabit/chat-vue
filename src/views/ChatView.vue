@@ -83,13 +83,15 @@ const sendMessage = async () => {
     await sendChatMessage(
       userMessage, 
       controller.value?.signal,
-      (content, htmlContent) => {
+      async (content, htmlContent) => {
         // 直接更新 messages 数组中的对应消息
         messages.value[messageIndex] = {
           ...messages.value[messageIndex],
           content,
           htmlContent
         }
+        // 每次内容更新后都滚动到底部
+        await scrollToBottom()
       }
     )
   } catch (error) {
@@ -128,6 +130,7 @@ const scrollToBottom = async (): Promise<void> => {
   padding: 32px;
   scrollbar-width: thin;
   scrollbar-color: #444444 #1a1a1a;
+  scroll-behavior: smooth; /* 添加平滑滚动效果 */
 }
 
 .chat-messages::-webkit-scrollbar {
