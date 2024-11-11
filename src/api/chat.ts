@@ -1,31 +1,21 @@
 import MarkdownIt from 'markdown-it'
-import axios from 'axios'
-import type { AxiosInstance, AxiosResponse } from 'axios'
-import type { ChatResponse } from '../types/chat'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css' // 选择一个主题
+import 'highlight.js/styles/atom-one-dark.css'
 
-const md = new MarkdownIt({
-  html: true,        // 启用 HTML 标签
-  breaks: true,      // 转换换行符为 <br>
-  linkify: true,     // 自动转换 URL 为链接
-  typographer: true,  // 启用一些语言中立的替换和引号美化
+const md: MarkdownIt = new MarkdownIt({
+  html: true,
+  breaks: true,
+  linkify: true,
+  typographer: true,
   highlight: function (str: string, lang: string) {
     if (lang && hljs.getLanguage(lang)) {
       try {
-        return hljs.highlight(str, { language: lang }).value
+        return '<div class="hljs">' + 
+          hljs.highlight(str, { language: lang }).value + 
+          '</div>'
       } catch (__) {}
     }
-    return '' // 使用默认的转义
-  }
-})
-
-const api: AxiosInstance = axios.create({   
-  baseURL: `${import.meta.env.VITE_API_BASE_URL}`,
-  timeout: 60000,
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${import.meta.env.VITE_API_KEY}`
+    return '<div class="hljs">' + md.utils.escapeHtml(str) + '</div>'
   }
 })
 
