@@ -10,7 +10,7 @@ const md = new MarkdownIt({
   breaks: true,      // 转换换行符为 <br>
   linkify: true,     // 自动转换 URL 为链接
   typographer: true,  // 启用一些语言中立的替换和引号美化
-  highlight: function (str, lang) {
+  highlight: function (str: string, lang: string) {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(str, { language: lang }).value
@@ -36,39 +36,91 @@ interface ChatCompletionResponse {
       }
     }]
   }
-  export const sendChatMessage = async (message: string, signal?: AbortSignal): Promise<ChatResponse> => {
+  export const sendChatMessage = async (
+    message: string, 
+    signal?: AbortSignal,
+    onUpdate?: (content: string, htmlContent: string) => void
+  ): Promise<ChatResponse> => {
     try {
-      const response: AxiosResponse<ChatCompletionResponse> = await api.post('/chat/completions', {
-        model: import.meta.env.VITE_MODEL_ID,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant. Please format your responses in markdown when appropriate.'
-          },
-          {
-            role: 'user',
-            content: message
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: import.meta.env.VITE_MODEL_ID,
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful assistant. Please format your responses in markdown when appropriate.'
+            },
+            {
+              role: 'user',
+              content: message
+            }
+          ],
+          stream: true
+        }),
+        signal: signal
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('无法获取响应流')
+      }
+
+      let rawContent = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = new TextDecoder().decode(value)
+        const lines = chunk.split('\n').filter(line => line.trim() !== '')
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6)
+            if (jsonStr === '[DONE]') continue
+            
+            try {
+              const json = JSON.parse(jsonStr)
+              const content = json.choices[0]?.delta?.content || ''
+              rawContent += content
+              
+              if (content && onUpdate) {
+                const htmlContent = md.render(rawContent)
+                console.log(rawContent)
+                console.log(htmlContent)
+                onUpdate(rawContent, htmlContent)
+              }
+            } catch (e) {
+              console.warn('解析JSON失败:', e)
+            }
           }
-        ]
-      }, { signal })
-  
-      // 将返回的内容转换为 HTML
-      const rawContent = response.data.choices[0].message.content
+        }
+      }
+
       const htmlContent = md.render(rawContent)
-  
+      
       return {
-        message: rawContent,           // 原始 markdown 文本
-        htmlContent: htmlContent,      // 转换后的 HTML
+        message: rawContent,
+        htmlContent: htmlContent,
         status: 0
       }
-    } catch (error) {
-        if (axios.isCancel(error)) {
-            throw new Error('请求已取消')
-          }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('请求已取消')
+      }
       console.error('API 调用失败:', error)
       return {
         message: '抱歉，发生了错误',
-        status: 1  // 错误状态
+        htmlContent: '<p>抱歉，发生了错误</p>',
+        status: 1
       }
     }
   }

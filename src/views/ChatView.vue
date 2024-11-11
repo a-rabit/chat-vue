@@ -28,7 +28,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import ChatMessage from '../components/ChatMessage.vue'
 import ChatInput from '../components/ChatInput.vue'
-import { sendChatMessage } from '../api/chat.ts'
+import { sendChatMessage } from '../api/chat'
 import type { Message } from '../types/chat'
 import GeneratingIndicator from '../components/GeneratingIndicator.vue'
 
@@ -52,38 +52,49 @@ const userInput = ref<string>('')
 const loading = ref<boolean>(false)
 const messageContainer = ref<HTMLElement | null>(null)
 
-const sendMessage = async (content: string) => {
-  if (!userInput.value.trim() || loading.value) return
-
-  const userMessage: ChatMessage = {
+const sendMessage = async () => {
+  if (!userInput.value.trim()) return
+  
+  const userMessage = userInput.value
+  userInput.value = ''
+  
+  // 添加用户消息
+  messages.value.push({
     id: uuidv4(),
-    content: userInput.value,
-    role: 'user'
-  }
+    role: 'user' as const,  // 使用 as const 来确保类型正确
+    content: userMessage,
+    htmlContent: undefined
+  })
   
-  controller.value = new AbortController()
   loading.value = true
-  
+  controller.value = new AbortController()
+
   try {
-    const response = await sendChatMessage(userInput.value, controller.value.signal)
-    
-    const assistantMessage: ChatMessage = {
+    // 创建一个新的消息索引
+    const messageIndex = messages.value.length
+    messages.value.push({
       id: uuidv4(),
-      content: response.message,
-      htmlContent: response.htmlContent,
-      role: 'assistant'
-    }
-    messages.value.push(userMessage)
-    messages.value.push(assistantMessage)
+      role: 'assistant' as const,
+      content: '',
+      htmlContent: ''
+    })
+
+    await sendChatMessage(
+      userMessage, 
+      controller.value?.signal,
+      (content, htmlContent) => {
+        // 直接更新 messages 数组中的对应消息
+        messages.value[messageIndex] = {
+          ...messages.value[messageIndex],
+          content,
+          htmlContent
+        }
+      }
+    )
   } catch (error) {
-    if (error.name === 'AbortError') {
-      console.log('生成被取消')
-    } else {
-      console.error('Error:', error)
-    }
+    console.error('消息发送失败:', error)
   } finally {
     loading.value = false
-    userInput.value = ''
     controller.value = null
     await scrollToBottom()
   }

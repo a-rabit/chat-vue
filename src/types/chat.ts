@@ -5,7 +5,7 @@ export interface Message {
 }
 
 export interface ChatResponse {
-  message: string
-  htmlContent?: string
-  status: number
+  message: string;
+  htmlContent: string;
+  status: number;
 } 

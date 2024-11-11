@@ -20,8 +20,7 @@ export default defineConfig({
       '/api/v3': {
         target: 'https://ark.cn-beijing.volces.com',
         changeOrigin: true,
-        timeout: 60000,  
-        // rewrite: (path) => path.replace(/^\/api/, '')  // 如果需要重写路径，取消注释这行
+        timeout: 60000,
       }
     }
   }
