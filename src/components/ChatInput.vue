@@ -6,16 +6,17 @@
       :disabled="loading"
       rows="1"
       ref="textareaRef"
+      @blur="handleBlur"
     />
     <button 
-      @click="emit('send')"
+      @click="handleSend"
       :disabled="loading"
     >发送</button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 
 const props = defineProps<{
   modelValue: string
@@ -29,6 +30,15 @@ const emit = defineEmits<{
 
 const inputValue = ref(props.modelValue)
 const textareaRef = ref<HTMLTextAreaElement>()
+const shouldFocus = ref(true)
+
+const handleSend = () => {
+  emit('send')
+  shouldFocus.value = true
+  nextTick(() => {
+    textareaRef.value?.focus()
+  })
+}
 
 const handleEnter = (e: KeyboardEvent) => {
   if (e.shiftKey) {
@@ -38,27 +48,56 @@ const handleEnter = (e: KeyboardEvent) => {
       const end = textarea.selectionEnd
       const value = textarea.value
       inputValue.value = value.substring(0, start) + '\n' + value.substring(end)
-      setTimeout(() => {
+      nextTick(() => {
         textarea.selectionStart = textarea.selectionEnd = start + 1
-      }, 0)
+      })
     }
   } else {
-    emit('send')
-    setTimeout(() => {
-      textareaRef.value?.focus()
-    }, 0)
+    handleSend()
   }
 }
 
+const handleBlur = () => {
+  if (shouldFocus.value && !props.loading) {
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
+}
+
+watch(() => props.loading, (newValue) => {
+  if (!newValue && shouldFocus.value) {
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
+})
+
 watch(() => props.modelValue, (newValue) => {
   inputValue.value = newValue
-  setTimeout(() => {
-    textareaRef.value?.focus()
-  }, 0)
+  if (shouldFocus.value && !props.loading) {
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
 })
 
 watch(inputValue, (newValue) => {
   emit('update:modelValue', newValue)
+})
+
+onMounted(() => {
+  nextTick(() => {
+    textareaRef.value?.focus()
+  })
+})
+
+// 暴露 focus 方法
+defineExpose({
+  focus: () => {
+    shouldFocus.value = true
+    textareaRef.value?.focus()
+  }
 })
 </script>
 

@@ -40,7 +40,7 @@ interface ChatCompletionResponse {
     message: string, 
     signal?: AbortSignal,
     onUpdate?: (content: string, htmlContent: string) => void
-  ): Promise<ChatResponse> => {
+  ): Promise<void> => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/chat/completions`, {
         method: 'POST',
@@ -94,8 +94,6 @@ interface ChatCompletionResponse {
               
               if (content && onUpdate) {
                 const htmlContent = md.render(rawContent)
-                console.log(rawContent)
-                console.log(htmlContent)
                 onUpdate(rawContent, htmlContent)
               }
             } catch (e) {
@@ -104,23 +102,11 @@ interface ChatCompletionResponse {
           }
         }
       }
-
-      const htmlContent = md.render(rawContent)
-      
-      return {
-        message: rawContent,
-        htmlContent: htmlContent,
-        status: 0
-      }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === 'AbortError') {
         throw new Error('请求已取消')
       }
       console.error('API 调用失败:', error)
-      return {
-        message: '抱歉，发生了错误',
-        htmlContent: '<p>抱歉，发生了错误</p>',
-        status: 1
-      }
+      throw new Error('API 调用失败')
     }
   }

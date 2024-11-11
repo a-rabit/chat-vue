@@ -18,6 +18,7 @@
         v-model="userInput"
         @send="sendMessage"
         :loading="loading"
+        ref="inputRef"
       />
     </div>
   </div>
